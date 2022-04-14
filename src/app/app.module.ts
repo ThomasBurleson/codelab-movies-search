@@ -3,7 +3,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { AppComponent, MovieCard, HeaderBar } from './components';
+import { AppComponent } from './components';
 import { HttpClientModule } from '@angular/common/http';
 
 import { MoviesFacade, MoviesDataService } from './data-access';
@@ -17,7 +17,7 @@ import { MoviesFacade, MoviesDataService } from './data-access';
     HttpClientModule,
   ],
   providers: [MoviesFacade, MoviesDataService],
-  declarations: [AppComponent, MovieCard, HeaderBar],
+  declarations: [AppComponent],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
