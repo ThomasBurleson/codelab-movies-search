@@ -1,3 +1,5 @@
+import {StatusState} from '@ngneat/elf-requests/lib/requests-status';
+
 export interface MovieItem {
   id: string;
   title: string;
@@ -35,6 +37,10 @@ export interface MovieComputedState {
   filteredMovies: MovieItem[];
 }
 
+export interface MovieRequestStatus {
+  status: StatusState;
+}
+
 export function initState(): MovieState {
   return {
     searchBy: 'dogs',
@@ -43,4 +49,4 @@ export function initState(): MovieState {
   };
 }
 
-export type MovieViewModel = MovieState & MovieComputedState & MovieAPI;
+export type MovieViewModel = MovieState & MovieComputedState & MovieAPI & MovieRequestStatus;

@@ -1,7 +1,7 @@
-import { Observable } from 'rxjs';
+import {MonoTypeOperatorFunction, Observable} from 'rxjs';
 import { map, withLatestFrom } from 'rxjs/operators';
 
-import { createStore, withProps } from '@ngneat/elf';
+import { createStore, setProp, setProps, withProps } from '@ngneat/elf';
 import {
   selectAllEntities,
   withEntities,
@@ -12,44 +12,53 @@ import {
   initState,
   MovieState,
   MovieItem,
-  MovieComputedState,
+  MovieComputedState, MovieRequestStatus,
 } from './movies.model';
 import { computeFilteredMovies } from './movies.filters';
+import {
+  selectRequestStatus,
+  updateRequestStatus,
+  withRequestsStatus,
+  createRequestsStatusOperator
+} from '@ngneat/elf-requests';
+import { initializeAsPending } from '@ngneat/elf-requests';
 
 const _store = createStore(
   { name: 'movie' },
   withProps<MovieState>(initState()),
-  withEntities<MovieItem>()
+  withEntities<MovieItem>(),
+  withRequestsStatus<'movie'>(initializeAsPending('movie'))
 );
 
 const movies$ = _store.pipe(selectAllEntities());
+const status$ = _store.pipe(selectRequestStatus('movie'));
+
+const trackRequestsStatus = createRequestsStatusOperator(_store);
 
 const state$ = _store.pipe(
-  withLatestFrom(movies$),
-  map(([state, allMovies]) => {
+  withLatestFrom(movies$, status$),
+  map(([state, allMovies, status]) => {
     return {
       ...state,
       allMovies,
       filteredMovies: computeFilteredMovies(allMovies, state.filterBy),
+      status
     };
   })
 );
 
 function updateMovies(movies: MovieItem[], searchBy?: string) {
   const hasSearchBy = searchBy !== undefined && searchBy !== null;
-  const updateSearchBy = (state) => ({
-    ...state,
-    searchBy: hasSearchBy ? searchBy : state.searchBy,
-  });
 
-  _store.update(updateSearchBy, setEntities(movies));
+  _store.update(
+    setProps(state => ({ searchBy: hasSearchBy ? searchBy : state.searchBy })),
+    setEntities(movies),
+    updateRequestStatus('movie', 'success'),
+  );
 }
 
 function updateFilter(filterBy?: string) {
-  _store.update((state) => ({
-    ...state,
-    filterBy: filterBy || '',
-  }));
+  _store.update(setProp('filterBy', filterBy || ''));
 }
 
 function searchBy() {
@@ -61,10 +70,11 @@ function searchBy() {
  **********************************************/
 
 export interface MovieStore {
-  state$: Observable<MovieState & MovieComputedState>;
+  state$: Observable<MovieState & MovieRequestStatus & MovieComputedState>;
   searchBy: () => string;
   updateMovies: (movies: MovieItem[], searchBy?: string) => void;
   updateFilter: (filterBy?: string) => void;
+  trackRequest: MonoTypeOperatorFunction<unknown>;
 }
 
 export const store: MovieStore = {
@@ -72,4 +82,5 @@ export const store: MovieStore = {
   searchBy,
   updateMovies,
   updateFilter,
+  trackRequest: trackRequestsStatus('movie')
 };
